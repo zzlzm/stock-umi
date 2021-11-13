@@ -1,10 +1,9 @@
 import { defineConfig } from 'umi';
 
 export default defineConfig({
-  nodeModulesTransform: {
-    type: 'none',
-  },
-  routes: [
-    { path: '/', component: '@/pages/index' },
-  ],
+    nodeModulesTransform: {
+        type: 'none',
+    },
+    copy: ['assets/stock.json'],
+    routes: [{ path: '/', component: '@/pages/index' }],
 });

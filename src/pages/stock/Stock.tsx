@@ -5,7 +5,7 @@ import moment from 'moment';
 
 import columns from './config/stock.column';
 import styles from './Stock.less';
-import stockList from './config/stock.list';
+import * as service from './services/stock.service';
 
 export interface IProps
     extends SubscriptionAPI,
@@ -16,7 +16,7 @@ const Stock: React.FC<IProps> = props => {
     const { stocks } = props.stock;
     let interval;
 
-    const start = useCallback(() => {
+    const start = useCallback(stockList => {
         if (interval) return;
         interval = setInterval(() => {
             dispatch({
@@ -36,22 +36,33 @@ const Stock: React.FC<IProps> = props => {
         message.success('stop');
     }, []);
 
+    const getStockList = async () => {
+        const { data } = await service.getStockList();
+        return data;
+    };
+
     useEffect(() => {
-        start();
-        setInterval(() => {
-            const now = new Date().getTime() % (24 * 60 * 60 * 1000);
-            const milliPerHour = 60 * 60 * 1000;
-            const morningStart = 1.5 * milliPerHour;
-            const morningEnd = 3.5 * milliPerHour;
-            const afternoonStart = 5 * milliPerHour;
-            const afternoonEnd = 7 * milliPerHour;
-            if ((now > morningStart && now < morningEnd) || (now > afternoonStart && now < afternoonEnd)) {
-                start();
-            } else {
-                stop();
-            }
-        },  1 * 60 * 1000);
-        message.config({duration: 1})
+        getStockList().then(data => {
+            const { stockList } = data;
+            start(stockList.map(item => item.code));
+            setInterval(() => {
+                const now = new Date().getTime() % (24 * 60 * 60 * 1000);
+                const milliPerHour = 60 * 60 * 1000;
+                const morningStart = 1.5 * milliPerHour;
+                const morningEnd = 3.5 * milliPerHour;
+                const afternoonStart = 5 * milliPerHour;
+                const afternoonEnd = 7 * milliPerHour;
+                if (
+                    (now > morningStart && now < morningEnd) ||
+                    (now > afternoonStart && now < afternoonEnd)
+                ) {
+                    start(stockList.map(item => item.code));
+                } else {
+                    stop();
+                }
+            }, 1 * 60 * 1000);
+            message.config({ duration: 1 });
+        });
     }, []);
     return (
         <div className={styles.title}>
@@ -67,7 +78,9 @@ const Stock: React.FC<IProps> = props => {
                 <Button type="link" onClick={start}>
                     开始
                 </Button>
-                <Button type="link" onClick={stop}>停止</Button>
+                <Button type="link" onClick={stop}>
+                    停止
+                </Button>
             </div>
         </div>
     );
